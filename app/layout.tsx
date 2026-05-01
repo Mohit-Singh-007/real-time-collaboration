@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Serif, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fontSans = IBM_Plex_Sans({
   subsets: ["latin"],
+  variable: "--font-sans",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const fontSerif = IBM_Plex_Serif({
   subsets: ["latin"],
+  variable: "--font-serif",
+  weight: ["100", "200", "300", "400", "500", "600", "700"],
+});
+
+const fontMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["100", "200", "300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -23,11 +30,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en">
+      <body
+        className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}
+      >
+        {children}
+      </body>
     </html>
   );
 }

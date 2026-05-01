@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  // own
+  ownedDocs     Document[]       @relation("DocOwner")
+  memberships   DocumentMember[]
+  comments      Comment[]
+  versions      DocumentVersion[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Document {
+  id      String @id
+  title   String @default("Untitled")
+  ownerId String
+  owner   User   @relation("DocOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  yjsSnapshot Bytes? // to load doc without replaying each operation
+  textContent String? // updates on each save
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  DocumentMember[]
+  versions DocumentVersion[]
+  comments Comment[]
+
+  @@index([ownerId])
+}
+
+enum MemberRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model DocumentMember {
+  id         String     @id @default(cuid())
+  documentId String
+  userId     String
+  role       MemberRole @default(VIEWER)
+  createdAt  DateTime   @default(now())
+
+  document   Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([documentId])
+  @@index([userId])
+}
+
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  documentId  String
+  createdById String
+  label       String?           // e.g. "Before big rewrite"
+  yjsSnapshot Bytes             // full Yjs state at that point
+  createdAt   DateTime @default(now())
+
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@index([documentId])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  documentId String
+  authorId   String
+  content    String
+  resolved   Boolean  @default(false)
+
+  // TipTap stores a unique mark ID for inline anchoring
+  anchorId   String?
+
+  // threading
+  parentId   String?
+  parent     Comment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies    Comment[] @relation("CommentThread")
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author     User     @relation(fields: [authorId], references: [id])
+
+  @@index([documentId])
+}
