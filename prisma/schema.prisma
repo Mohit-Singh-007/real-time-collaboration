@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String    @id @default(cuid())
   name          String
   email         String
   emailVerified Boolean   @default(false)
@@ -19,10 +19,10 @@ model User {
   accounts      Account[]
 
   // own
-  ownedDocs     Document[]       @relation("DocOwner")
-  memberships   DocumentMember[]
-  comments      Comment[]
-  versions      DocumentVersion[]
+  ownedDocs   Document[]        @relation("DocOwner")
+  memberships DocumentMember[]
+  comments    Comment[]
+  versions    DocumentVersion[]
 
   @@unique([email])
   @@map("user")
@@ -77,7 +77,7 @@ model Verification {
 }
 
 model Document {
-  id      String @id
+  id      String @id @default(cuid())
   title   String @default("Untitled")
   ownerId String
   owner   User   @relation("DocOwner", fields: [ownerId], references: [id], onDelete: Cascade)
@@ -108,8 +108,8 @@ model DocumentMember {
   role       MemberRole @default(VIEWER)
   createdAt  DateTime   @default(now())
 
-  document   Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, userId])
   @@index([documentId])
@@ -120,36 +120,36 @@ model DocumentVersion {
   id          String   @id @default(cuid())
   documentId  String
   createdById String
-  label       String?           // e.g. "Before big rewrite"
-  yjsSnapshot Bytes             // full Yjs state at that point
+  label       String? // e.g. "Before big rewrite"
+  yjsSnapshot Bytes // full Yjs state at that point
   createdAt   DateTime @default(now())
 
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User     @relation(fields: [createdById], references: [id])
 
   @@index([documentId])
 }
 
 model Comment {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   documentId String
   authorId   String
   content    String
-  resolved   Boolean  @default(false)
+  resolved   Boolean @default(false)
 
   // TipTap stores a unique mark ID for inline anchoring
-  anchorId   String?
+  anchorId String?
 
   // threading
-  parentId   String?
-  parent     Comment?  @relation("CommentThread", fields: [parentId], references: [id])
-  replies    Comment[] @relation("CommentThread")
+  parentId String?
+  parent   Comment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentThread")
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  author     User     @relation(fields: [authorId], references: [id])
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id])
 
   @@index([documentId])
 }
