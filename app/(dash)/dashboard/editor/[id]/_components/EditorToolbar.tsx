@@ -1,6 +1,6 @@
 "use client";
 
-import { type Editor, useEditorState } from "@tiptap/react";
+import { useEditorState } from "@tiptap/react";
 import { Toggle } from "@/components/ui/toggle";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -11,141 +11,94 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  Heading4,
+  Heading5,
+  Heading6,
   List,
   ListOrdered,
   Quote,
   Minus,
   Undo,
   Redo,
+  Eraser,
+  Type,
+  CodeXml
 } from "lucide-react";
+import menuBarStateSelector from "./menuBarStateSelector";
 
-export function EditorToolbar({ editor }: { editor: Editor | null }) {
-  // Subscribe to every editor transaction so active-state re-renders correctly
-  // (without this, editor.isActive() is only read at mount time)
-  const state = useEditorState({
+export const EditorToolbar = ({ editor }: { editor: any }) => {
+  const editorState = useEditorState({
     editor,
-    selector: (ctx) => ({
-      isBold: ctx.editor?.isActive("bold") ?? false,
-      isItalic: ctx.editor?.isActive("italic") ?? false,
-      isStrike: ctx.editor?.isActive("strike") ?? false,
-      isCode: ctx.editor?.isActive("code") ?? false,
-      isH1: ctx.editor?.isActive("heading", { level: 1 }) ?? false,
-      isH2: ctx.editor?.isActive("heading", { level: 2 }) ?? false,
-      isH3: ctx.editor?.isActive("heading", { level: 3 }) ?? false,
-      isBulletList: ctx.editor?.isActive("bulletList") ?? false,
-      isOrderedList: ctx.editor?.isActive("orderedList") ?? false,
-      isBlockquote: ctx.editor?.isActive("blockquote") ?? false,
-    }),
+    selector: menuBarStateSelector,
   });
 
-  if (!editor) return null;
+  if (!editor || !editorState) {
+    return null;
+  }
 
-  const btn = (
+  const renderButton = (
     label: string,
     icon: React.ReactNode,
     action: () => void,
     active?: boolean,
+    disabled?: boolean
   ) => (
     <Toggle
       size="sm"
       pressed={active}
-      // Prevent the button from stealing focus from the editor.
-      // If focus moves away, ProseMirror resets stored marks from the
-      // cursor position when `.focus()` is called, overwriting any mark
-      // changes that were just made (bold stuck on, marks lost on H1 toggle, etc.)
+      disabled={disabled}
       onMouseDown={(e) => e.preventDefault()}
       onPressedChange={() => action()}
       aria-label={label}
-      className="h-8 w-8 p-0 data-[state=on]:bg-[#f0d4bb] data-[state=on]:text-[#c8601a]"
+      className="h-9 w-9 p-0 data-[state=on]:bg-orange-100 data-[state=on]:text-orange-600"
+      title={label}
     >
       {icon}
     </Toggle>
   );
 
   return (
-    <div className="flex items-center gap-0.5 px-4 py-2 border-b border-[#ddd8cd] bg-white flex-wrap">
-      {/* history */}
-      {btn("Undo", <Undo className="h-3.5 w-3.5" />, () =>
-        editor.chain().focus().undo().run(),
-      )}
-      {btn("Redo", <Redo className="h-3.5 w-3.5" />, () =>
-        editor.chain().focus().redo().run(),
-      )}
+    <div className="flex flex-wrap items-center gap-1 p-1 bg-white border-b sticky top-0 z-10">
+      <div className="flex items-center gap-1">
+        {renderButton("Bold", <Bold className="h-4 w-4" />, () => editor.chain().focus().toggleBold().run(), editorState.isBold, !editorState.canBold)}
+        {renderButton("Italic", <Italic className="h-4 w-4" />, () => editor.chain().focus().toggleItalic().run(), editorState.isItalic, !editorState.canItalic)}
+        {renderButton("Strike", <Strikethrough className="h-4 w-4" />, () => editor.chain().focus().toggleStrike().run(), editorState.isStrike, !editorState.canStrike)}
+        {renderButton("Code", <Code className="h-4 w-4" />, () => editor.chain().focus().toggleCode().run(), editorState.isCode, !editorState.canCode)}
+      </div>
 
-      <Separator orientation="vertical" className="h-5 mx-1" />
+      <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* headings */}
-      {btn(
-        "H1",
-        <Heading1 className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-        state?.isH1,
-      )}
-      {btn(
-        "H2",
-        <Heading2 className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-        state?.isH2,
-      )}
-      {btn(
-        "H3",
-        <Heading3 className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-        state?.isH3,
-      )}
+      <div className="flex items-center gap-1">
+        {renderButton("Paragraph", <Type className="h-4 w-4" />, () => editor.chain().focus().setParagraph().run(), editorState.isParagraph)}
+        {renderButton("H1", <Heading1 className="h-4 w-4" />, () => editor.chain().focus().toggleHeading({ level: 1 }).run(), editorState.isHeading1)}
+        {renderButton("H2", <Heading2 className="h-4 w-4" />, () => editor.chain().focus().toggleHeading({ level: 2 }).run(), editorState.isHeading2)}
+        {renderButton("H3", <Heading3 className="h-4 w-4" />, () => editor.chain().focus().toggleHeading({ level: 3 }).run(), editorState.isHeading3)}
+        {renderButton("H4", <Heading4 className="h-4 w-4" />, () => editor.chain().focus().toggleHeading({ level: 4 }).run(), editorState.isHeading4)}
+        {renderButton("H5", <Heading5 className="h-4 w-4" />, () => editor.chain().focus().toggleHeading({ level: 5 }).run(), editorState.isHeading5)}
+        {renderButton("H6", <Heading6 className="h-4 w-4" />, () => editor.chain().focus().toggleHeading({ level: 6 }).run(), editorState.isHeading6)}
+      </div>
 
-      <Separator orientation="vertical" className="h-5 mx-1" />
+      <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* marks */}
-      {btn(
-        "Bold",
-        <Bold className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleBold().run(),
-        state?.isBold,
-      )}
-      {btn(
-        "Italic",
-        <Italic className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleItalic().run(),
-        state?.isItalic,
-      )}
-      {btn(
-        "Strike",
-        <Strikethrough className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleStrike().run(),
-        state?.isStrike,
-      )}
-      {btn(
-        "Code",
-        <Code className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleCode().run(),
-        state?.isCode,
-      )}
+      <div className="flex items-center gap-1">
+        {renderButton("Bullet List", <List className="h-4 w-4" />, () => editor.chain().focus().toggleBulletList().run(), editorState.isBulletList)}
+        {renderButton("Ordered List", <ListOrdered className="h-4 w-4" />, () => editor.chain().focus().toggleOrderedList().run(), editorState.isOrderedList)}
+        {renderButton("Blockquote", <Quote className="h-4 w-4" />, () => editor.chain().focus().toggleBlockquote().run(), editorState.isBlockquote)}
+        {renderButton("Code Block", <CodeXml className="h-4 w-4" />, () => editor.chain().focus().toggleCodeBlock().run(), editorState.isCodeBlock)}
+      </div>
 
-      <Separator orientation="vertical" className="h-5 mx-1" />
+      <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* lists */}
-      {btn(
-        "Bullet list",
-        <List className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleBulletList().run(),
-        state?.isBulletList,
-      )}
-      {btn(
-        "Ordered list",
-        <ListOrdered className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleOrderedList().run(),
-        state?.isOrderedList,
-      )}
-      {btn(
-        "Blockquote",
-        <Quote className="h-3.5 w-3.5" />,
-        () => editor.chain().focus().toggleBlockquote().run(),
-        state?.isBlockquote,
-      )}
-      {btn("Divider", <Minus className="h-3.5 w-3.5" />, () =>
-        editor.chain().focus().setHorizontalRule().run(),
-      )}
+      <div className="flex items-center gap-1">
+        {renderButton("Horizontal Rule", <Minus className="h-4 w-4" />, () => editor.chain().focus().setHorizontalRule().run())}
+      </div>
+
+      <div className="flex-grow" />
+
+      <div className="flex items-center gap-1">
+        {renderButton("Undo", <Undo className="h-4 w-4" />, () => editor.chain().focus().undo().run(), false, !editorState.canUndo)}
+        {renderButton("Redo", <Redo className="h-4 w-4" />, () => editor.chain().focus().redo().run(), false, !editorState.canRedo)}
+      </div>
     </div>
   );
-}
+};
